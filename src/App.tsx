@@ -2,6 +2,9 @@ import { db } from './firebase';
 import { collection, addDoc, getDocs } from "firebase/firestore";
 import { deleteDoc, doc, updateDoc } from "firebase/firestore";
 import { useState, useEffect } from 'react';
+import { auth, provider } from './firebase';
+import { signInWithPopup, signOut } from 'firebase/auth';
+import { query, where } from "firebase/firestore";
 interface Todo {
   id: string;
   text: string;
@@ -20,6 +23,7 @@ function App() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editedText, setEditedText] = useState<string>('');
   const [newDueDate, setNewDueDate] = useState<string>('');
+  const [user, setUser] = useState<any>(null);
 
   async function handleAddTodo(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -30,6 +34,7 @@ function App() {
         text: newTodo.trim(),
         completed: false,
         dueDate: newDueDate,
+        uid: user.uid
       });
   
       const newTask: Todo = {
@@ -102,13 +107,43 @@ function App() {
     }
   }
 
+  function handleLogin() {
+    signInWithPopup(auth, provider)
+      .then((result) => {
+        setUser(result.user);
+      })
+      .catch((error) => {
+        console.error("ログインエラー", error);
+      });
+  }
+
+  function handleLogout() {
+    signOut(auth)
+      .then(() => {
+        setUser(null);
+      })
+      .catch((error) => {
+        console.log("ログアウトエラー:", error);
+      });
+  }
+
   useEffect(() => {
+    if (!user) return;
+
     const fetchTodos = async () => {
       try {
-        const querySnapshot = await getDocs(collection(db, "todos"));
+        const q = query(
+          collection(db, "todos"),
+          where("uid", "==", user.uid)
+        );
+        const querySnapshot = await getDocs(q)
+
         const fetchedTodos: Todo[] = [];
         querySnapshot.forEach((doc) => {
-          fetchedTodos.push(doc.data() as Todo);
+          fetchedTodos.push({
+            ...(doc.data() as Todo),
+            id: doc.id
+          });
         });
 
         setTodos(fetchedTodos);
@@ -117,11 +152,22 @@ function App() {
       }
     };
     fetchTodos();
-  }, []);
+  }, [user]);
 
   return (
     <div style={{ maxWidth: '500px', margin: '0 auto', padding: '20px' }}>
       <h1>Todoアプリ</h1>
+
+      <div style={{marginBottom: '20px' }}>
+        {user ? (
+          <div>
+            <p>👤 {user.displayName}</p>
+            <button onClick={handleLogout}>ログアウト</button>
+          </div>
+        ) : (
+          <button onClick={handleLogin}>Googleでログイン</button>
+        )}
+      </div>
 
       <form onSubmit={handleAddTodo}>
         <input
