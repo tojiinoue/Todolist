@@ -1,5 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
+import { db } from './firebase';
+import { collection, addDoc, getDocs } from "firebase/firestore";
+import { deleteDoc, doc, updateDoc } from "firebase/firestore";
+import { useState, useEffect } from 'react';
 interface Todo {
+  id: string;
   text: string;
   completed: boolean;
   dueDate: string;
@@ -12,34 +16,58 @@ interface Todo {
 function App() {
   const [newTodo, setNewTodo] = useState<string>('');
   const [todos, setTodos] = useState<Todo[]>([]);
-  const hasLoaded = useRef(false);
   const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all');
-  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [editedText, setEditedText] = useState<string>('');
-  const [newDueDate, setNewDewDate] = useState<string>('');
+  const [newDueDate, setNewDueDate] = useState<string>('');
 
-  function handleAddTodo(e: React.FormEvent<HTMLFormElement>) {
+  async function handleAddTodo(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!newTodo.trim()) return;
-    const newTask: Todo = {
-      text: newTodo.trim(),
-      completed: false,
-      dueDate: newDueDate
-    };
-
-    setTodos([...todos, newTask]);
-    setNewTodo('');
+  
+    try {
+      const docRef = await addDoc(collection(db, "todos"), {
+        text: newTodo.trim(),
+        completed: false,
+        dueDate: newDueDate,
+      });
+  
+      const newTask: Todo = {
+        id: docRef.id,
+        text: newTodo.trim(),
+        completed: false,
+        dueDate: newDueDate
+      };
+  
+      setTodos([...todos, newTask]);
+      setNewTodo('');
+      setNewDueDate('');
+      console.log('Firestoreにタスク保存成功');
+    } catch (error) {
+      console.error('Firestore保存エラー:', error);
+    }
   }
 
-  function handleToggleTodo(index: number) {
-    const newTodos = [...todos];
-    newTodos[index].completed = !newTodos[index].completed;
-    setTodos(newTodos);
+  async function handleToggleTodo(todo: Todo) {
+    try {
+      const updated = { ...todo, completed: !todo.completed };
+      await updateDoc(doc(db, "todos", todo.id), {
+        completed: updated.completed
+      });
+  
+      setTodos(todos.map(t => t.id === todo.id ? updated : t));
+    } catch (error) {
+      console.error("完了状態の更新失敗:", error);
+    }
   }
 
-  function handleDeleteTodo(index: number) {
-    const newTodos  = todos.filter((_, i) => i !== index);
-    setTodos(newTodos);
+  async function handleDeleteTodo(id: string) {
+    try {
+      await deleteDoc(doc(db, "todos", id));
+      setTodos(todos.filter((todo) => todo.id !== id));
+    } catch (error) {
+      console.error("消去エラー:", error);
+    }
   }
 
   const filterdTodos = todos
@@ -57,39 +85,39 @@ function App() {
     return dateA - dateB;
   });
 
-  function handleSaveEdit(index: number) {
-    const newTodos = todos.map((todo, i) =>
-      i === index
-        ? { ...todo, text: editedText.trim() }
-        : todo
-    );
-    newTodos[index].text = editedText.trim();
-    setTodos(newTodos);
-    setEditingIndex(null);
-    setEditedText('');
+  async function handleSaveEdit(id: string) {
+    try {
+      await updateDoc(doc(db, "todos", id), {
+        text: editedText.trim(),
+      });
+  
+      setTodos(todos.map(todo =>
+        todo.id === id ? { ...todo, text: editedText.trim() } : todo
+      ));
+  
+      setEditingId(null);
+      setEditedText('');
+    } catch (error) {
+      console.error("編集エラー:", error);
+    }
   }
 
   useEffect(() => {
-    const saved = localStorage.getItem('todos');
-    if (saved) {
+    const fetchTodos = async () => {
       try {
-        const parsed: Todo[] = JSON.parse(saved);
-        setTodos(parsed);
-      } catch (e) {
-        console.error("読み込み失敗", e);
-      }  
-    }
+        const querySnapshot = await getDocs(collection(db, "todos"));
+        const fetchedTodos: Todo[] = [];
+        querySnapshot.forEach((doc) => {
+          fetchedTodos.push(doc.data() as Todo);
+        });
+
+        setTodos(fetchedTodos);
+      } catch (error) {
+        console.error("Firestore読み込みエラー", error);
+      }
+    };
+    fetchTodos();
   }, []);
-
-  useEffect(() => {
-    if (!hasLoaded.current) {
-      hasLoaded.current = true
-      return;
-    }
-    localStorage.setItem('todos', JSON.stringify(todos));
-  }, [todos]);
-
-  
 
   return (
     <div style={{ maxWidth: '500px', margin: '0 auto', padding: '20px' }}>
@@ -106,7 +134,7 @@ function App() {
         <input
           type="datetime-local"
           value={newDueDate}
-          onChange={(e) => setNewDewDate(e.target.value)}
+          onChange={(e) => setNewDueDate(e.target.value)}
           style={{ padding: '8px', marginRight: '8px' }}
         />
         <button type="submit" style={{ padding: '8px 16px' }}>
@@ -120,27 +148,27 @@ function App() {
       </div>
 
       <ul style={{ listStyle: 'none', padding: 0, marginTop: '20px'}}>
-        {filterdTodos.map((todo, index) => {
+        {filterdTodos.map((todo) => {
           const isOverdue = todo.dueDate && new Date(todo.dueDate) < new Date();
 
           return (
-            <li key={index} style={{ padding: '8px 0', borderBottom: '1px solid #ccc', display: 'flex', alignItems: 'center' }}>
+            <li key={todo.id} style={{ padding: '8px 0', borderBottom: '1px solid #ccc', display: 'flex', alignItems: 'center' }}>
               <div style={{display: 'flex', alignItems: 'center' }}>
                 <input
                   type="checkbox"
                   checked={todo.completed}
-                  onChange={() => handleToggleTodo(index)}
+                  onChange={() => handleToggleTodo(todo)}
                   style={{ marginRight: '8px'}}
                 />
 
-                {editingIndex === index ? (
+                {editingId === todo.id ? (
                   <input
                     type="text"
                     value={editedText}
                     onChange={(e) => setEditedText(e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
-                        handleSaveEdit(index);
+                        handleSaveEdit(todo.id);
                       }
                     }}
                     style={{ marginRight: '8px' }}
@@ -166,14 +194,14 @@ function App() {
               <div style={{ display: 'flex', gap: '8px' }}>
                 <button
                   onClick={() => {
-                    setEditingIndex(index);
+                    setEditingId(todo.id);
                     setEditedText(todo.text);
                   }}
                 >
                   ✏️
                 </button>    
                 <button
-                  onClick={() => handleDeleteTodo(index)}
+                  onClick={() => handleDeleteTodo(todo.id)}
                   style={{ marginLeft: '8px', padding: '4px 8px', color: 'red' }}
                 >
                   ✖︎
