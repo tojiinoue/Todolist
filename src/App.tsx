@@ -5,11 +5,13 @@ import { useState, useEffect } from 'react';
 import { auth, provider } from './firebase';
 import { signInWithPopup, signOut } from 'firebase/auth';
 import { query, where } from "firebase/firestore";
+import { onAuthStateChanged } from 'firebase/auth';
 interface Todo {
   id: string;
   text: string;
   completed: boolean;
   dueDate: string;
+  uid: string;
 }
 //useState：今の状態を覚えておく変数とそれを更新する関数をセットでくれるReactの仕組み
 //useEffect：何か処理を実行したいときに使う
@@ -41,7 +43,8 @@ function App() {
         id: docRef.id,
         text: newTodo.trim(),
         completed: false,
-        dueDate: newDueDate
+        dueDate: newDueDate,
+        uid: user.uid
       };
   
       setTodos([...todos, newTask]);
@@ -126,6 +129,14 @@ function App() {
         console.log("ログアウトエラー:", error);
       });
   }
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+    });
+  
+    return () => unsubscribe(); // クリーンアップ
+  }, []);
 
   useEffect(() => {
     if (!user) return;
