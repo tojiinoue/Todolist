@@ -138,6 +138,9 @@ function App() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
+      if (!currentUser) {
+        setTodos([]); // ← ログアウトしたらタスク消す！
+      }
     });
   
     return () => unsubscribe(); // クリーンアップ
