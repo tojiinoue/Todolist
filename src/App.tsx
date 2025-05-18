@@ -228,7 +228,7 @@ function App() {
   return (
     <div className="w-full max-w-screen-xl mx-auto p-4">
       <div className="bg-white p-6 shadow-md rounded-md">
-        <h1 className="text-3xl font-bold mb-4">Todoアプリ</h1>
+        <h1 className="text-3xl text-black font-bold mb-4">Todoアプリ</h1>
 
         <div style={{marginBottom: '20px' }}>
           {user ? (
@@ -254,6 +254,7 @@ function App() {
             placeholder="タスクを入力してください"
             style={{ padding: '8px', marginRight: '8px', flex: 1 }}
           />
+          <p className="text-lg font-semibold text-gray-800">期限：</p>
           <input
             type="datetime-local"
             value={newDueDate}
@@ -272,7 +273,7 @@ function App() {
           <button onClick={() => setStatsFilter('month')} className="hover:underline">今月</button>
         </div>
 
-        <div className="bg-gray-100 text-sm p-4 rounded shadow mb-4">
+        <div className="bg-gray-100 text-black text-sm p-4 rounded shadow mb-4">
           <p className="font-semibold mb-2">📊 タスク統計（{statsFilter === 'all' ? '全体' : statsFilter === 'today' ? '今日' : statsFilter === 'week' ? '今週' : '今月'}）</p>
           <ul className="space-y-1">
             <li>全体：{totalCount} 件</li>
