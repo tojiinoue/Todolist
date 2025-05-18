@@ -254,13 +254,15 @@ function App() {
             placeholder="タスクを入力してください"
             style={{ padding: '8px', marginRight: '8px', flex: 1 }}
           />
-          <p className="text-lg font-semibold text-gray-800">期限：</p>
+          <div className="flex items-center space-x-1">
+          <label htmlFor="dueDate" className="text-black">期限：</label>
           <input
             type="datetime-local"
             value={newDueDate}
             onChange={(e) => setNewDueDate(e.target.value)}
             style={{ padding: '8px', marginRight: '8px' }}
           />
+          </div>
           <button type="submit" style={{ padding: '8px 16px' }}>
             追加
           </button>
