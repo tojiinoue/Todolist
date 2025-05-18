@@ -27,6 +27,7 @@ function App() {
   const [newDueDate, setNewDueDate] = useState<string>('');
   const [user, setUser] = useState<any>(null);
   const [editedDueDate, setEditedDueDate] = useState<string>('');
+  const [statsFilter, setStatsFilter] = useState<'all' | 'today' | 'week' | 'month'>('all');
 
   async function handleAddTodo(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -135,6 +136,57 @@ function App() {
       });
   }
 
+  // 2. 日付判定関数たち
+  function isToday(dateStr: string) {
+    const today = new Date();
+    const d = new Date(dateStr);
+    return (
+      d.getFullYear() === today.getFullYear() &&
+      d.getMonth() === today.getMonth() &&
+      d.getDate() === today.getDate()
+    );
+  }
+
+  function isThisWeek(dateStr: string) {
+    const now = new Date();
+    const d = new Date(dateStr);
+  
+    const startOfWeek = new Date(now);
+    startOfWeek.setHours(0, 0, 0, 0);
+    startOfWeek.setDate(now.getDate() - now.getDay());
+  
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+    endOfWeek.setHours(23, 59, 59, 999);
+  
+    return d >= startOfWeek && d <= endOfWeek;
+  }
+
+  function isThisMonth(dateStr: string) {
+    const now = new Date();
+    const d = new Date(dateStr);
+    return (
+      d.getFullYear() === now.getFullYear() &&
+      d.getMonth() === now.getMonth()
+    );
+  }
+
+  // 3. 統計用のフィルター適用
+  const filteredForStats = todos.filter(todo => {
+    if (!todo.dueDate) return false;
+
+    if (statsFilter === 'today') return isToday(todo.dueDate);
+    if (statsFilter === 'week') return isThisWeek(todo.dueDate);
+    if (statsFilter === 'month') return isThisMonth(todo.dueDate);
+    return true; // all
+  });
+
+  // 4. 統計データの集計
+  const totalCount = filteredForStats.length;
+  const completedCount = filteredForStats.filter(todo => todo.completed).length;
+  const activeCount = totalCount - completedCount;
+  const completionRate = totalCount > 0 ? Math.floor((completedCount / totalCount) * 100) : 0;
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
@@ -212,6 +264,24 @@ function App() {
             追加
           </button>
         </form>
+
+        <div className="mt-4 mb-2 flex gap-2 text-sm">
+          <button onClick={() => setStatsFilter('all')} className="hover:underline">全体</button>
+          <button onClick={() => setStatsFilter('today')} className="hover:underline">今日</button>
+          <button onClick={() => setStatsFilter('week')} className="hover:underline">今週</button>
+          <button onClick={() => setStatsFilter('month')} className="hover:underline">今月</button>
+        </div>
+
+        <div className="bg-gray-100 text-sm p-4 rounded shadow mb-4">
+          <p className="font-semibold mb-2">📊 タスク統計（{statsFilter === 'all' ? '全体' : statsFilter === 'today' ? '今日' : statsFilter === 'week' ? '今週' : '今月'}）</p>
+          <ul className="space-y-1">
+            <li>全体：{totalCount} 件</li>
+            <li>完了：{completedCount} 件</li>
+            <li>未完了：{activeCount} 件</li>
+            <li>完了率：{completionRate} %</li>
+          </ul>
+        </div>
+
         <div style={{ marginTop: '20px', marginBottom: '10px' }}>
           <button onClick={() => setFilter('all')} style={{ marginRight: '8px' }}>すべて</button>
           <button onClick={() => setFilter('active')} style={{ marginRight: '8px' }}>未完了</button>
