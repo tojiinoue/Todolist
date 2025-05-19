@@ -27,7 +27,8 @@ function App() {
   const [newDueDate, setNewDueDate] = useState<string>('');
   const [user, setUser] = useState<any>(null);
   const [editedDueDate, setEditedDueDate] = useState<string>('');
-  const [statsFilter, setStatsFilter] = useState<'all' | 'today' | 'week' | 'month'>('all');
+  // 1つだけに統一
+  const [filterRange, setFilterRange] = useState<'all' | 'today' | 'week' | 'month'>('all');
 
   async function handleAddTodo(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -79,21 +80,6 @@ function App() {
       console.error("消去エラー:", error);
     }
   }
-
-  const filterdTodos = todos
-  .filter(todo => {
-    if (filter === 'active') return !todo.completed;
-    if (filter === 'completed') return todo.completed;
-    return true;
-  })
-  .sort((a, b) => {
-    if (a.completed !== b.completed) {
-      return a.completed ? 1 : -1;
-    }
-    const dateA = a.dueDate ? new Date(a.dueDate).getTime() : Infinity;
-    const dateB = b.dueDate ? new Date(b.dueDate).getTime() : Infinity;
-    return dateA - dateB;
-  });
 
   async function handleSaveEdit(id: string) {
     try {
@@ -172,18 +158,42 @@ function App() {
   }
 
   // 3. 統計用のフィルター適用
-  const filteredForStats = todos.filter(todo => {
-    if (!todo.dueDate) return false;
+  // 表示フィルター
+  const filteredTodos = todos
+  .filter((todo) => {
+    // ステータスフィルター
+    const statusOk =
+      filter === 'all' ||
+      (filter === 'active' && !todo.completed) ||
+      (filter === 'completed' && todo.completed);
 
-    if (statsFilter === 'today') return isToday(todo.dueDate);
-    if (statsFilter === 'week') return isThisWeek(todo.dueDate);
-    if (statsFilter === 'month') return isThisMonth(todo.dueDate);
-    return true; // all
+    // 日付フィルター
+    const dateOk =
+      filterRange === 'all' ||
+      (filterRange === 'today' && isToday(todo.dueDate)) ||
+      (filterRange === 'week' && isThisWeek(todo.dueDate)) ||
+      (filterRange === 'month' && isThisMonth(todo.dueDate));
+
+    return statusOk && dateOk;
+  })
+  .sort((a, b) => {
+    if (!a.dueDate) return 1;
+    if (!b.dueDate) return -1;
+    return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
   });
 
-  // 4. 統計データの集計
-  const totalCount = filteredForStats.length;
-  const completedCount = filteredForStats.filter(todo => todo.completed).length;
+  const filteredTodosForStats = todos
+  .filter((todo) => {
+    if (!todo.dueDate) return false;
+    if (filterRange === 'today') return isToday(todo.dueDate);
+    if (filterRange === 'week') return isThisWeek(todo.dueDate);
+    if (filterRange === 'month') return isThisMonth(todo.dueDate);
+    return true;
+  });
+
+  // 統計もこの filteredTodos を使うだけ！
+  const totalCount = filteredTodosForStats.length;
+  const completedCount = filteredTodosForStats.filter(todo => todo.completed).length;
   const activeCount = totalCount - completedCount;
   const completionRate = totalCount > 0 ? Math.floor((completedCount / totalCount) * 100) : 0;
 
@@ -269,14 +279,35 @@ function App() {
         </form>
 
         <div className="mt-4 mb-2 flex gap-2 text-sm">
-          <button onClick={() => setStatsFilter('all')} className="hover:underline">全体</button>
-          <button onClick={() => setStatsFilter('today')} className="hover:underline">今日</button>
-          <button onClick={() => setStatsFilter('week')} className="hover:underline">今週</button>
-          <button onClick={() => setStatsFilter('month')} className="hover:underline">今月</button>
+          <button
+            onClick={() => setFilterRange('all')}
+            className={`${filterRange === 'all' ? 'bg-blue-100 border border-blue-500 text-blue-700' : 'text-gray-600'} px-2 py-1 rounded`}
+          >
+            全体
+          </button>
+          <button
+            onClick={() => setFilterRange('today')}
+            className={`${filterRange === 'today' ? 'bg-blue-100 border border-blue-500 text-blue-700' : 'text-gray-600'} px-2 py-1 rounded`}
+          >
+            今日
+          </button>
+          <button
+            onClick={() => setFilterRange('week')}
+            className={`${filterRange === 'week' ? 'bg-blue-100 border border-blue-500 text-blue-700' : 'text-gray-600'} px-2 py-1 rounded`}
+          >
+            今週
+          </button>
+          <button
+            onClick={() => setFilterRange('month')}
+            className={`${filterRange === 'month' ? 'bg-blue-100 border border-blue-500 text-blue-700' : 'text-gray-600'} px-2 py-1 rounded`}
+          >
+            今月
+          </button>
         </div>
 
+
         <div className="bg-gray-100 text-black text-sm p-4 rounded shadow mb-4">
-          <p className="font-semibold mb-2">📊 タスク統計（{statsFilter === 'all' ? '全体' : statsFilter === 'today' ? '今日' : statsFilter === 'week' ? '今週' : '今月'}）</p>
+          <p className="font-semibold mb-2">📊 タスク統計（{filterRange === 'all' ? '全体' : filterRange === 'today' ? '今日' : filterRange === 'week' ? '今週' : '今月'}）</p>
           <ul className="space-y-1">
             <li>全体：{totalCount} 件</li>
             <li>完了：{completedCount} 件</li>
@@ -285,14 +316,29 @@ function App() {
           </ul>
         </div>
 
-        <div style={{ marginTop: '20px', marginBottom: '10px' }}>
-          <button onClick={() => setFilter('all')} style={{ marginRight: '8px' }}>すべて</button>
-          <button onClick={() => setFilter('active')} style={{ marginRight: '8px' }}>未完了</button>
-          <button onClick={() => setFilter('completed')}>完了済み</button>
+        <div className="mt-4 mb-2 flex gap-2 text-sm">
+          <button
+            onClick={() => setFilter('all')}
+            className={`${filter === 'all' ? 'bg-blue-100 border border-blue-500 text-blue-700' : 'text-gray-600'} px-2 py-1 rounded`}
+          >
+            すべて
+          </button>
+          <button
+            onClick={() => setFilter('active')}
+            className={`${filter === 'active' ? 'bg-blue-100 border border-blue-500 text-blue-700' : 'text-gray-600'} px-2 py-1 rounded`}
+          >
+            未完了
+          </button>
+          <button
+            onClick={() => setFilter('completed')}
+            className={`${filter === 'completed' ? 'bg-blue-100 border border-blue-500 text-blue-700' : 'text-gray-600'} px-2 py-1 rounded`}
+          >
+            完了済み
+          </button>
         </div>
 
         <ul style={{ listStyle: 'none', padding: 0, marginTop: '20px'}}>
-          {filterdTodos.map((todo) => {
+          {filteredTodos.map((todo) => {
             const isOverdue = todo.dueDate && new Date(todo.dueDate) < new Date();
 
             return (
