@@ -278,6 +278,33 @@ function App() {
           </button>
         </form>
 
+        <div className="mt-4 mb-2 flex gap-2 text-sm">
+          <button
+            onClick={() => setFilterRange('all')}
+            className={`${filterRange === 'all' ? 'bg-blue-100 border border-blue-500 text-blue-700' : 'text-gray-800 dark:text-gray-100'} px-2 py-1 rounded`}
+          >
+            全体
+          </button>
+          <button
+            onClick={() => setFilterRange('today')}
+            className={`${filterRange === 'today' ? 'bg-blue-100 border border-blue-500 text-blue-700' : 'text-gray-800 dark:text-gray-100'} px-2 py-1 rounded`}
+          >
+            今日
+          </button>
+          <button
+            onClick={() => setFilterRange('week')}
+            className={`${filterRange === 'week' ? 'bg-blue-100 border border-blue-500 text-blue-700' : 'text-gray-800 dark:text-gray-100'} px-2 py-1 rounded`}
+          >
+            今週
+          </button>
+          <button
+            onClick={() => setFilterRange('month')}
+            className={`${filterRange === 'month' ? 'bg-blue-100 border border-blue-500 text-blue-700' : 'text-gray-800 dark:text-gray-100'} px-2 py-1 rounded`}
+          >
+            今月
+          </button>
+        </div>
+
         <div className="bg-gray-100 text-black text-sm p-4 rounded shadow mb-4">
           <p className="font-semibold mb-2">📊 タスク統計（{filterRange === 'all' ? '全体' : filterRange === 'today' ? '今日' : filterRange === 'week' ? '今週' : '今月'}）</p>
           <ul className="space-y-1">
@@ -290,47 +317,20 @@ function App() {
 
         <div className="mt-4 mb-2 flex gap-2 text-sm">
           <button
-            onClick={() => setFilterRange('all')}
-            className={`${filterRange === 'all' ? 'bg-blue-100 border border-blue-500 text-blue-700' : 'text-black'} px-2 py-1 rounded`}
-          >
-            全体
-          </button>
-          <button
-            onClick={() => setFilterRange('today')}
-            className={`${filterRange === 'today' ? 'bg-blue-100 border border-blue-500 text-blue-700' : 'text-black'} px-2 py-1 rounded`}
-          >
-            今日
-          </button>
-          <button
-            onClick={() => setFilterRange('week')}
-            className={`${filterRange === 'week' ? 'bg-blue-100 border border-blue-500 text-blue-700' : 'text-black'} px-2 py-1 rounded`}
-          >
-            今週
-          </button>
-          <button
-            onClick={() => setFilterRange('month')}
-            className={`${filterRange === 'month' ? 'bg-blue-100 border border-blue-500 text-blue-700' : 'text-black'} px-2 py-1 rounded`}
-          >
-            今月
-          </button>
-        </div>
-
-        <div className="mt-4 mb-2 flex gap-2 text-sm">
-          <button
             onClick={() => setFilter('all')}
-            className={`${filter === 'all' ? 'bg-blue-100 border border-blue-500 text-blue-700' : 'text-black'} px-2 py-1 rounded`}
+            className={`${filter === 'all' ? 'bg-blue-100 border border-blue-500 text-blue-700' : 'text-gray-800 dark:text-gray-100'} px-2 py-1 rounded`}
           >
             すべて
           </button>
           <button
             onClick={() => setFilter('active')}
-            className={`${filter === 'active' ? 'bg-blue-100 border border-blue-500 text-blue-700' : 'text-black'} px-2 py-1 rounded`}
+            className={`${filter === 'active' ? 'bg-blue-100 border border-blue-500 text-blue-700' : 'text-gray-800 dark:text-gray-100'} px-2 py-1 rounded`}
           >
             未完了
           </button>
           <button
             onClick={() => setFilter('completed')}
-            className={`${filter === 'completed' ? 'bg-blue-100 border border-blue-500 text-blue-700' : 'text-black'} px-2 py-1 rounded`}
+            className={`${filter === 'completed' ? 'bg-blue-100 border border-blue-500 text-blue-700' : 'text-gray-800 dark:text-gray-100'} px-2 py-1 rounded`}
           >
             完了済み
           </button>
