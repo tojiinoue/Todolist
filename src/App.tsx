@@ -139,7 +139,7 @@ function App() {
   
     const startOfWeek = new Date(now);
     startOfWeek.setHours(0, 0, 0, 0);
-    startOfWeek.setDate(now.getDate() - now.getDay());
+    startOfWeek.setDate(now.getDate() - (now.getDay() + 6) % 7);
   
     const endOfWeek = new Date(startOfWeek);
     endOfWeek.setDate(startOfWeek.getDate() + 6);
@@ -177,6 +177,12 @@ function App() {
     return statusOk && dateOk;
   })
   .sort((a, b) => {
+    // 未完了タスクを優先
+    if (a.completed !== b.completed) {
+      return a.completed ? 1 : -1; // aが完了なら後ろ、bが完了なら前
+    }
+  
+    // どちらも完了 or どちらも未完了なら、日付順でソート
     if (!a.dueDate) return 1;
     if (!b.dueDate) return -1;
     return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
